@@ -1,4 +1,4 @@
-import { Camera, CameraView, useCameraPermissions } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState } from "react";
 import {
   Button,
@@ -9,12 +9,14 @@ import {
   View,
 } from "react-native";
 import scanMeImage from "./assets/scanMe.png";
+import PullUpModal from "./components/PullUpModal";
 
 export default function App() {
   const [cameraType, setCameraType] = useState("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [scanMessage, setScanMessage] = useState("Scan QR");
 
   if (!permission) {
     // camera permission are still loading
@@ -44,16 +46,27 @@ export default function App() {
     type: string;
     data: string;
   }) => {
-    setScanned(true);
-    console.log(
-      `Bar code with type ${type} and data ${data} has been scanned!`
-    );
-    setShowCamera(false);
+    setScanMessage("Scanning...");
+
+    setTimeout(() => {
+      setScanMessage("");
+      setScanned(true);
+      console.log(
+        `Bar code with type ${type} and data ${data} has been scanned!`
+      );
+      setShowCamera(false);
+    }, 1000);
+  };
+
+  const handleShowCamera = () => {
+    setScanMessage("Scan QR");
+    setScanned(false);
+    setShowCamera(true);
   };
 
   return (
     <View style={styles.container}>
-      {showCamera && (
+      <PullUpModal isVisible={showCamera} onClose={() => setShowCamera(false)}>
         <CameraView
           barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
           onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
@@ -64,19 +77,12 @@ export default function App() {
               style={styles.button}
               onPress={toggleCameraFacing}
             >
-              <Text style={styles.text}>Flip Camera</Text>
+              {scanMessage && <Text style={styles.text}>{scanMessage}</Text>}
             </TouchableOpacity>
           </View>
         </CameraView>
-      )}
-      {/* <Button
-        title={showCamera ? "Hide Camera" : "Show Camera"}
-        onPress={() => setShowCamera(!showCamera)}
-      /> */}
-      <TouchableOpacity
-        style={styles.scanBox}
-        onPress={() => setShowCamera(!showCamera)}
-      >
+      </PullUpModal>
+      <TouchableOpacity style={styles.scanBox} onPress={handleShowCamera}>
         <Image style={styles.scanImage} source={scanMeImage} />
       </TouchableOpacity>
     </View>
@@ -91,7 +97,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   camera: {
-    flex: 1,
+    zIndex: 1,
+    height: 350,
+    width: 250,
   },
   buttonContainer: {
     flex: 1,
